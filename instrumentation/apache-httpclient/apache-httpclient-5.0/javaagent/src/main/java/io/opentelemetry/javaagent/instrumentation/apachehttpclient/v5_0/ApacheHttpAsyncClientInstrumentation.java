@@ -8,6 +8,7 @@ package io.opentelemetry.javaagent.instrumentation.apachehttpclient.v5_0;
 import static io.opentelemetry.javaagent.bootstrap.Java8BytecodeBridge.currentContext;
 import static io.opentelemetry.javaagent.extension.matcher.AgentElementMatchers.hasClassesNamed;
 import static io.opentelemetry.javaagent.extension.matcher.AgentElementMatchers.implementsInterface;
+import static io.opentelemetry.javaagent.instrumentation.apachehttpclient.v5_0.ApacheHttpClientSingletons.createOrGetContentLengthMetrics;
 import static io.opentelemetry.javaagent.instrumentation.apachehttpclient.v5_0.ApacheHttpClientSingletons.instrumenter;
 import static java.util.logging.Level.FINE;
 import static net.bytebuddy.matcher.ElementMatchers.isMethod;
@@ -17,7 +18,6 @@ import static net.bytebuddy.matcher.ElementMatchers.takesArguments;
 
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
-import io.opentelemetry.instrumentation.api.util.VirtualField;
 import io.opentelemetry.javaagent.extension.instrumentation.TypeInstrumentation;
 import io.opentelemetry.javaagent.extension.instrumentation.TypeTransformer;
 import java.io.IOException;
@@ -94,8 +94,6 @@ class ApacheHttpAsyncClientInstrumentation implements TypeInstrumentation {
   }
 
   public static class WrappedResponseConsumer<T> implements AsyncResponseConsumer<T> {
-    private static final VirtualField<Context, ApacheContentLengthMetrics> virtualField =
-        VirtualField.find(Context.class, ApacheContentLengthMetrics.class);
     private final AsyncResponseConsumer<T> delegate;
     private final Context parentContext;
 
@@ -105,15 +103,18 @@ class ApacheHttpAsyncClientInstrumentation implements TypeInstrumentation {
     }
 
     @Override
-    public void consumeResponse(HttpResponse httpResponse, EntityDetails entityDetails,
-        HttpContext httpContext, FutureCallback<T> futureCallback) throws HttpException,
-        IOException {
+    public void consumeResponse(
+        HttpResponse httpResponse,
+        EntityDetails entityDetails,
+        HttpContext httpContext,
+        FutureCallback<T> futureCallback)
+        throws HttpException, IOException {
       delegate.consumeResponse(httpResponse, entityDetails, httpContext, futureCallback);
     }
 
     @Override
-    public void informationResponse(HttpResponse httpResponse, HttpContext httpContext) throws
-        HttpException, IOException {
+    public void informationResponse(HttpResponse httpResponse, HttpContext httpContext)
+        throws HttpException, IOException {
       delegate.informationResponse(httpResponse, httpContext);
     }
 
@@ -129,12 +130,10 @@ class ApacheHttpAsyncClientInstrumentation implements TypeInstrumentation {
 
     @Override
     public void consume(ByteBuffer byteBuffer) throws IOException {
-      ApacheContentLengthMetrics metrics = virtualField.get(parentContext);
-      if (metrics == null) {
-        metrics = new ApacheContentLengthMetrics();
-        virtualField.set(parentContext, metrics);
+      if (byteBuffer.hasRemaining()) {
+        ApacheContentLengthMetrics metrics = createOrGetContentLengthMetrics(parentContext);
+        metrics.addResponseBytes(byteBuffer.limit());
       }
-      metrics.addResponseBytes(byteBuffer.limit());
       delegate.consume(byteBuffer);
     }
 
@@ -155,9 +154,7 @@ class ApacheHttpAsyncClientInstrumentation implements TypeInstrumentation {
     private final WrappedFutureCallback<?> callback;
 
     public WrappedRequestProducer(
-        Context parentContext,
-        AsyncRequestProducer delegate,
-        WrappedFutureCallback<?> callback) {
+        Context parentContext, AsyncRequestProducer delegate, WrappedFutureCallback<?> callback) {
       this.parentContext = parentContext;
       this.delegate = delegate;
       this.callback = callback;
@@ -197,8 +194,6 @@ class ApacheHttpAsyncClientInstrumentation implements TypeInstrumentation {
   }
 
   public static class WrappedDataStreamChannel implements DataStreamChannel {
-    private static final VirtualField<Context, ApacheContentLengthMetrics> virtualField =
-        VirtualField.find(Context.class, ApacheContentLengthMetrics.class);
     private final Context parentContext;
     private final DataStreamChannel delegate;
 
@@ -214,11 +209,7 @@ class ApacheHttpAsyncClientInstrumentation implements TypeInstrumentation {
 
     @Override
     public int write(ByteBuffer byteBuffer) throws IOException {
-      ApacheContentLengthMetrics metrics = virtualField.get(parentContext);
-      if (metrics == null) {
-        metrics = new ApacheContentLengthMetrics();
-        virtualField.set(parentContext, metrics);
-      }
+      ApacheContentLengthMetrics metrics = createOrGetContentLengthMetrics(parentContext);
       metrics.addRequestBytes(byteBuffer.limit());
       return delegate.write(byteBuffer);
     }
@@ -251,7 +242,7 @@ class ApacheHttpAsyncClientInstrumentation implements TypeInstrumentation {
     @Override
     public void sendRequest(HttpRequest request, EntityDetails entityDetails, HttpContext context)
         throws HttpException, IOException {
-      ApacheHttpRequest otelRequest = new ApacheHttpRequest(parentContext, request);
+      ApacheHttpClientRequest otelRequest = new ApacheHttpClientRequest(parentContext, request);
       if (instrumenter().shouldStart(parentContext, otelRequest)) {
         wrappedFutureCallback.context = instrumenter().start(parentContext, otelRequest);
         wrappedFutureCallback.otelRequest = otelRequest;
@@ -269,7 +260,7 @@ class ApacheHttpAsyncClientInstrumentation implements TypeInstrumentation {
     private final FutureCallback<T> delegate;
 
     private volatile Context context;
-    private volatile ApacheHttpRequest otelRequest;
+    private volatile ApacheHttpClientRequest otelRequest;
 
     public WrappedFutureCallback(
         Context parentContext, HttpContext httpContext, FutureCallback<T> delegate) {
@@ -364,11 +355,11 @@ class ApacheHttpAsyncClientInstrumentation implements TypeInstrumentation {
     }
 
     @Nullable
-    private ApacheHttpResponse getResponseFromHttpContext() {
-      HttpResponse httpResponse = (HttpResponse) httpContext.getAttribute(
-          HttpCoreContext.HTTP_RESPONSE);
+    private ApacheHttpClientResponse getResponseFromHttpContext() {
+      HttpResponse httpResponse =
+          (HttpResponse) httpContext.getAttribute(HttpCoreContext.HTTP_RESPONSE);
       if (httpResponse != null) {
-        return new ApacheHttpResponse(httpResponse);
+        return new ApacheHttpClientResponse(httpResponse);
       }
       return null;
     }
