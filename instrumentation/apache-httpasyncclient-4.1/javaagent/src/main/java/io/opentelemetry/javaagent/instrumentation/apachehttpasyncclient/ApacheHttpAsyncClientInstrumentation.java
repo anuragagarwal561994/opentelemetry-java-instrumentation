@@ -78,7 +78,7 @@ public class ApacheHttpAsyncClientInstrumentation implements TypeInstrumentation
         @Advice.Argument(value = 3, readOnly = false) FutureCallback<?> futureCallback) {
 
       Context parentContext = currentContext();
-      if (httpContext != null) {
+      if (httpContext == null) {
         httpContext = new BasicHttpContext();
       }
 
