@@ -5,8 +5,6 @@
 
 package io.opentelemetry.javaagent.instrumentation.apachehttpclient.v5_0;
 
-import static java.util.logging.Level.FINE;
-
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -109,5 +107,9 @@ public final class ApacheHttpClientAttributesHelper {
 
   public static Integer getPeerPort(HttpRequest httpRequest) {
     return httpRequest.getAuthority().getPort();
+  }
+
+  public static String getPeerName(HttpRequest httpRequest) {
+    return httpRequest.getAuthority().getHostName();
   }
 }

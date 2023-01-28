@@ -8,8 +8,6 @@ package io.opentelemetry.javaagent.instrumentation.apachehttpclient.v4_0.commons
 import static java.util.logging.Level.FINE;
 
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -93,6 +91,10 @@ public final class ApacheHttpClientAttributesHelper {
       logger.log(FINE, e.getMessage(), e);
       return null;
     }
+  }
+
+  public static String getPeerName(URI uri) {
+    return uri == null ? null : uri.getHost();
   }
 
   public static Integer getPeerPort(URI uri) {
