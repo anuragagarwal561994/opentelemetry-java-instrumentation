@@ -5,7 +5,6 @@
 
 package io.opentelemetry.javaagent.instrumentation.apachehttpclient.commons;
 
-import java.net.InetSocketAddress;
 import java.util.List;
 
 public interface OtelHttpRequest {
@@ -14,8 +13,6 @@ public interface OtelHttpRequest {
   String getPeerName();
 
   Integer getPeerPort();
-
-  InetSocketAddress getPeerSocketAddress();
 
   String getMethod();
 
