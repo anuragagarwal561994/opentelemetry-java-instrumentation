@@ -27,7 +27,7 @@ jobs:
   spotless:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up JDK for running Gradle
         uses: actions/setup-java@v3
@@ -50,14 +50,14 @@ jobs:
   gradle-wrapper-validation:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - uses: gradle/wrapper-validation-action@v1.0.6
 
   license-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up JDK for running Gradle
         uses: actions/setup-java@v3
@@ -99,7 +99,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up JDK for running Gradle
         uses: actions/setup-java@v3
@@ -170,7 +170,7 @@ jobs:
           sudo rm -rf /usr/share/dotnet
           df -h
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - id: setup-test-java
         name: Set up JDK ${{ matrix.test-java-version }}-${{ matrix.vm }} for running tests
@@ -302,7 +302,7 @@ jobs:
           df -h
         if: matrix.os == 'ubuntu-latest'
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up JDK for running Gradle
         uses: actions/setup-java@v3
@@ -356,7 +356,7 @@ jobs:
   gradle-plugins:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up JDK for running Gradle
         uses: actions/setup-java@v3
@@ -374,7 +374,7 @@ jobs:
   examples:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up JDK for running Gradle
         uses: actions/setup-java@v3
